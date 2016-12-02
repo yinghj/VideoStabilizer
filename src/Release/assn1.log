@@ -1,0 +1,25 @@
+﻿  R2Image.cpp
+R2Image.cpp(357): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(416): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+R2Image.cpp(452): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+R2Image.cpp(469): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(470): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(564): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(578): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(636): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(660): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(681): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(860): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(981): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(990): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(991): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(1018): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(1019): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(1067): warning C4018: “<”: 有符号/无符号不匹配
+  正在生成代码
+  2 of 718 functions ( 0.3%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  已完成代码的生成
+  assn1.vcxproj -> F:\2014-2018\Junior\Fall 2016\AIT\Computer Vision\computer_vision_skeleton\skeleton\src\Release\imgpro.exe
+  assn1.vcxproj -> F:\2014-2018\Junior\Fall 2016\AIT\Computer Vision\computer_vision_skeleton\skeleton\src\Release\imgpro.pdb (Full PDB)

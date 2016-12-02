@@ -1,0 +1,23 @@
+﻿  R2Image.cpp
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(356): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(415): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(451): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(468): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(469): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(563): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(577): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(635): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(659): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(680): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(704): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(708): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(729): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(739): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(747): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(757): warning C4018: “<”: 有符号/无符号不匹配
+f:\2014-2018\junior\fall 2016\ait\computer vision\computer_vision_skeleton\skeleton\src\r2image.cpp(758): warning C4018: “<”: 有符号/无符号不匹配
+C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(1189,5): warning MSB8012: TargetPath(F:\2014-2018\Junior\Fall 2016\AIT\Computer Vision\computer_vision_skeleton\skeleton\src\Debug\assn1.exe) does not match the Linker's OutputFile property value (F:\2014-2018\Junior\Fall 2016\AIT\Computer Vision\computer_vision_skeleton\skeleton\src\imgpro.exe). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(1191,5): warning MSB8012: TargetName(assn1) does not match the Linker's OutputFile property value (imgpro). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+imgpro.obj : warning LNK4075: 忽略“/EDITANDCONTINUE”(由于“/SAFESEH”规范)
+  assn1.vcxproj -> F:\2014-2018\Junior\Fall 2016\AIT\Computer Vision\computer_vision_skeleton\skeleton\src\Debug\assn1.exe
+  assn1.vcxproj -> F:\2014-2018\Junior\Fall 2016\AIT\Computer Vision\computer_vision_skeleton\skeleton\src\Debug\assn1.pdb (Full PDB)
