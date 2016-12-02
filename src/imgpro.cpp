@@ -222,6 +222,7 @@ main(int argc, char **argv)
 	else if (!strcmp(*argv, "-videoStabilization")) {
 		CheckOption(*argv, argc, 2);
 		int frame_num = atoi(argv[1]);
+		argv += 2, argc -= 2;
 		image->videoStabilization(frame_num);
 	}
     else {

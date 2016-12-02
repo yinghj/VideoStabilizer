@@ -1056,31 +1056,18 @@ blendOtherImageHomography(R2Image * otherImage)
 	return;
 }
 
-std::vector<int> ind_random(std::vector<HarrisPixel> tracked, int num) {
-	std::vector<int> point_corr;
-	point_corr.reserve(num);
-	while (point_corr.size() < num) {
-		int rIndex = std::rand() % tracked.size();
-		while ((std::find(point_corr.begin(), point_corr.end(), rIndex) != point_corr.end())) {
-			rIndex = std::rand() % tracked.size();
-		}
-		point_corr.push_back(rIndex);
-	}
-
-	return point_corr;
-}
-
 void R2Image::
 videoStabilization(int frame_num)
 {	
+	const char * jpg = ".jpg";
+	const char * zero = "0";
+
 	// Read frames into a vector
 	std::vector<R2Image*> frames;
 	int fileNameLength = 7;
 	for (int i = 0; i < frame_num; i++) {
 		char index[100];
 		itoa(i, index, 10);
-		const char *zero = "0";
-		const char *jpg = ".jpg";
 		char filename[100];
 		strcpy(filename, zero); // copy string one into the result.
 		for (int j = 0; j < fileNameLength - 1 - strlen(index); j++) {
@@ -1099,36 +1086,40 @@ videoStabilization(int frame_num)
 	std::vector<HarrisPixel> feats = harrisImage.Harris(2.0);
 
 	
-	//Track feats onto consecutive frames
-	for (int f = 0; f < frames.size() - 1; f++) {
-
+	// Track feats onto consecutive frames
+	for (int f = 0; f < frame_num - 1; f++) {
 		std::vector<HarrisPixel> feats_accepted;
 		feats_accepted.reserve(feats.size());
 		std::vector<HarrisPixel> next_accepted;
 		next_accepted.reserve(feats.size());
-		std::vector<int> accepted;
 
 		// Feature tracking on the next frame.
 		std::vector<HarrisPixel> next_feats;
 		next_feats.reserve(feats.size());
-		for (int j = 0; j < feats.size(); j++) {
-			HarrisPixel matchPix = frames[f]->Search(*frames[f], *frames[f+1], feats[j]);
+		for (int feat_index = 0; feat_index < feats.size(); feat_index++) {
+			HarrisPixel matchPix = frames[f]->Search(*frames[f], *frames[f+1], feats[feat_index]);
 			next_feats.push_back(matchPix);
 		}
 
-		const int N = 100;
-		// using sqr of length
-		const float THRESHOLD = 16;
-		int max_inliner = 0;
-		double **homography_matrix = new double*[3];
-		for (int i = 0; i < 3; i++) {
-			homography_matrix[i] = new double[3];
-		}
 
-		for (int n = 0; n < N; n++) {
+		//RANSAC elimination (eliminate in both frames)
+
+		// The number of RANSAC loops
+		const int N = 50;
+
+		// Difference threshold for inliners (using sqr of length)
+		const float THRESHOLD = 16;
+
+		int max_inliner = 0;
+
+		// Initialize the vector to store the best H 
+		// transformation matrix between two consecutive frames.
+		std::vector<double> homography_matrix;
+		homography_matrix.reserve(9);
+		for (int rsc_loop = 0; rsc_loop < N; rsc_loop++) {
 			int num_inliner = 0;
 
-			// Randomly pick 4 points
+			// Randomly pick 4 different points.
 			int rand_index_1 = rand() % 150;
 			int rand_index_2 = rand() % 150;
 			while (rand_index_2 == rand_index_1) {
@@ -1143,6 +1134,7 @@ videoStabilization(int frame_num)
 				rand_index_4 = rand() % 150;
 			}
 
+			// Initialize 4-correspondence vectors.
 			std::vector<int> inputX;
 			std::vector<int> inputY;
 			std::vector<int> outputX;
@@ -1168,21 +1160,12 @@ videoStabilization(int frame_num)
 			outputY.push_back(next_feats[rand_index_3].posy);
 			outputY.push_back(next_feats[rand_index_4].posy);
 
-			std::vector<double> norm_h = findHomographyMatrix(inputX, inputY, outputX, outputY);
-
-			double **h = new double*[3];
-			for (int i = 0; i < 3; i++) {
-				h[i] = new double[3];
-			}
-
-			for (int i = 0; i < 3; i++) {
-				for (int j = 0; j < 3; j++) {
-					h[i][j] = norm_h[i * 3 + j];
-				}
-			}
+			// Compute Homography Estimation Matrix.
+			std::vector<double> vector_h = findHomographyMatrix(inputX, inputY, outputX, outputY);
 			
 			std::vector<int> temp_accept;
 
+			// Count the number of inliners for the current H matirx.
 			for (int x = 0; x < feats.size(); x++) {
 				int m = next_feats[x].posx;
 				int n = next_feats[x].posy;
@@ -1192,8 +1175,8 @@ videoStabilization(int frame_num)
 				int v1 = m - p;
 				int v2 = n - q;
 
-				int u1 = ((h[0][0] * p + h[0][1] * q + h[0][2] * 1) / (h[2][0] * p + h[2][1] * q + h[2][2] * 1)) - p;
-				int u2 = ((h[1][0] * p + h[1][1] * q + h[1][2] * 1) / (h[2][0] * p + h[2][1] * q + h[2][2] * 1)) - q;
+				int u1 = ((vector_h[0] * p + vector_h[1] * q + vector_h[2] * 1) / (vector_h[6] * p + vector_h[7] * q + vector_h[8] * 1)) - p;
+				int u2 = ((vector_h[3] * p + vector_h[4] * q + vector_h[6] * 1) / (vector_h[6] * p + vector_h[7] * q + vector_h[8] * 1)) - q;
 
 				if (((u1 - v1) * (u1 - v1) + (u2 - v2) * (u2 - v2)) <= THRESHOLD) {
 					num_inliner++;
@@ -1201,75 +1184,30 @@ videoStabilization(int frame_num)
 				}
 			}
 
+			// Store the inliner features for the best H matrix.
 			if (num_inliner > max_inliner) {
 				max_inliner = num_inliner;
-				for (int n = 0; n < temp_accept.size(); n++) {
-					feats_accepted.push_back(feats[temp_accept[n]]);
-					next_accepted.push_back(next_feats[temp_accept[n]]);
+				for (int temp_ind = 0; temp_ind < temp_accept.size(); temp_ind++) {
+					feats_accepted.push_back(feats[temp_accept[temp_ind]]);
+					next_accepted.push_back(next_feats[temp_accept[temp_ind]]);
 				}
 			}
 		}
 
-		//RANSAC elimination (eliminate in both frames)
-		//for (int l = 0; l < feats.size() * 0.1; l++) {
-		//	std::vector<int> point_corr = ind_random(next_feats, 4);
-
-		//	std::vector<int> origx;
-		//	origx.reserve(point_corr.size());
-		//	std::vector<int> origy;
-		//	origy.reserve(point_corr.size());
-		//	std::vector<int> imagex;
-		//	imagex.reserve(point_corr.size());
-		//	std::vector<int> imagey;
-		//	imagey.reserve(point_corr.size());
-
-		//	for (int i = 0; i < point_corr.size(); i++) {
-		//		origx.push_back(feats[i].posx);
-		//		origy.push_back(feats[i].posy);
-		//		imagex.push_back(next_feats[i].posx);
-		//		imagey.push_back(next_feats[i].posy);
-		//	}
-
-		//	std::vector<double> H_Mat = findHomographyMatrix(origx, origy, imagex, imagey);
-		//	std::vector<int> temp_accept;
-
-		//	Calculate projected x and y coordinates and error
-		//	for (int k = 0; k < next_feats.size(); k++) {
-		//		double w_model = feats[k].posx * H_Mat[6] + feats[k].posy * H_Mat[7] + H_Mat[8];
-		//		double x_model = (feats[k].posx * H_Mat[0] + feats[k].posy * H_Mat[1] + H_Mat[2]) / w_model;
-		//		double y_model = (feats[k].posx * H_Mat[3] + feats[k].posy * H_Mat[4] + H_Mat[5]) / w_model;
-		//		double distsq = (next_feats[k].posx - x_model) * (next_feats[k].posx - x_model) + (next_feats[k].posy - y_model) * (next_feats[k].posy - y_model);
-
-		//		if (distsq <= 16) {
-		//			temp_accept.push_back(k);
-		//		}
-		//	}
-
-		//	if (temp_accept.size() > accepted.size()) {
-		//		accepted = temp_accept;
-		//	}
-		//}
-
-		//for (int n = 0; n < accepted.size(); n++) {
-		//	feats_accepted.push_back(feats[accepted[n]]);
-		//	next_accepted.push_back(next_feats[accepted[n]]);
-		//}
-
-
-		for (int k = 0; k < feats_accepted.size(); k++) {
-			frames[f]->line(feats_accepted[k].posx, next_accepted[k].posx, feats_accepted[k].posy, next_accepted[k].posy, 0, 255, 0);
+		for (int acc_ind = 0; acc_ind < feats_accepted.size(); acc_ind++) {
+			frames[f]->line(feats_accepted[acc_ind].posx, next_accepted[acc_ind].posx, 
+				feats_accepted[acc_ind].posy, next_accepted[acc_ind].posy, 0, 255, 0);
 		}
 
 		feats = next_accepted;
 
-
-		char frame_num[100];
-		itoa(f, frame_num, 10);
+		// Write the output jpg series.
+		char f_char[100];
+		itoa(f, f_char, 10);
 		char * folder_out = "frames_out/";
-		char * jpg = ".jpg";
 		char file_out[100];
 		strcpy(file_out, folder_out);
-		strcat(file_out, frame_num);
+		strcat(file_out, f_char);
 		strcat(file_out, jpg);
 
 		frames[f]->Write(file_out);
@@ -1312,7 +1250,6 @@ Read(const char *filename)
 int R2Image::
 Write(const char *filename) const
 {
-	printf("%s\n", filename);
   // Parse input filename extension
   char *input_extension;
   if (!(input_extension = (char*)strrchr(filename, '.'))) {
