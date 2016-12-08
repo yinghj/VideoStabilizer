@@ -1096,11 +1096,15 @@ videoStabilization(int frame_num)
 		// Feature tracking on the next frame.
 		std::vector<HarrisPixel> next_feats;
 		next_feats.reserve(feats.size());
+		printf("Start feature tracking for %d features.\n", feats.size());
 		for (int feat_index = 0; feat_index < feats.size(); feat_index++) {
+			if (feat_index % 10 == 0) {
+				printf("Tracking feature No.%d...\r", feat_index);
+			}
 			HarrisPixel matchPix = frames[f]->Search(*frames[f], *frames[f + 1], feats[feat_index]);
 			next_feats.push_back(matchPix);
 		}
-
+		printf("%d features matched.			\n", next_feats.size());
 
 		//RANSAC elimination (eliminate in both frames)
 
@@ -1188,69 +1192,71 @@ videoStabilization(int frame_num)
 			if (num_inliner > max_inliner) {
 				max_inliner = num_inliner;
 				homography_matrix = vector_h;
+				feats_accepted.clear();
+				next_accepted.clear();
 				for (int temp_ind = 0; temp_ind < temp_accept.size(); temp_ind++) {
 					feats_accepted.push_back(feats[temp_accept[temp_ind]]);
 					next_accepted.push_back(next_feats[temp_accept[temp_ind]]);
 				}
-			}
-
-			/*
-			for (int acc_ind = 0; acc_ind < feats_accepted.size(); acc_ind++) {
-				frames[f]->line(feats_accepted[acc_ind].posx, next_accepted[acc_ind].posx,
-					feats_accepted[acc_ind].posy, next_accepted[acc_ind].posy, 0, 255, 0);
-			}
-			*/
-
-			for (int hom_ind = 0; hom_ind < homography_matrix.size(); hom_ind++) {
-				avg_homography[hom_ind] += homography_matrix[hom_ind];
-			}
-
-			feats = next_accepted;
-
-			// Write the output jpg series.
-			/*
-			char f_char[100];
-			itoa(f, f_char, 10);
-			char * folder_out = "frames_out/";
-			char file_out[100];
-			strcpy(file_out, folder_out);
-			strcat(file_out, f_char);
-			strcat(file_out, jpg);
-
-			frames[f]->Write(file_out);
-			*/
+			}		
 		}
 
-		for (int avg_ind = 0; avg_ind < avg_homography.size(); avg_ind++) {
-			avg_homography[avg_ind] /= frame_num;
+		/*
+		for (int acc_ind = 0; acc_ind < feats_accepted.size(); acc_ind++) {
+			frames[f]->line(feats_accepted[acc_ind].posx, next_accepted[acc_ind].posx,
+			feats_accepted[acc_ind].posy, next_accepted[acc_ind].posy, 0, 255, 0);
 		}
+		*/
 
-		for (int f_ind = 0; f_ind < frame_num - 1; f_ind++) {
-			R2Image stabilized_frame(frames[f_ind]->width, frames[f_ind]->height);
+		printf("Trackable features remaining: %d\n", next_accepted.size());
 
-			for (int x = 0; x < frames[f_ind]->width; x++) {
-				for (int y = 0; y < frames[f_ind]->height; y++) {
-					double w_model = avg_homography[6] * x + avg_homography[7] * y + avg_homography[8];
-					int x_model = (avg_homography[0] * x + avg_homography[1] * y + avg_homography[2]) / w_model;
-					int y_model = (avg_homography[3] * x + avg_homography[4] * y + avg_homography[5]) / w_model;
+		feats = next_accepted;
 
-					stabilized_frame.Pixel(bound(x_model, stabilized_frame.width), bound(y_model, stabilized_frame.height)) =
-						frames[f_ind]->Pixel(x, y);
-				}
-			}
-
-			char f_char[100];
-			itoa(f, f_char, 10);
-			char * folder_out = "frames_out/";
-			char file_out[100];
-			strcpy(file_out, folder_out);
-			strcat(file_out, f_char);
-			strcat(file_out, jpg);
-
-			stabilized_frame.Write(file_out);
+		printf("%d homography matrices calculated\n", f+1);
+		for (int hom_ind = 0; hom_ind < homography_matrix.size(); hom_ind++) {
+			avg_homography[hom_ind] += homography_matrix[hom_ind];
 		}
+		printf("---------------------------------------\n");
 	}
 
+	printf("Final avg homography matrix: ");
+	for (int avg_ind = 0; avg_ind < avg_homography.size(); avg_ind++) {
+		avg_homography[avg_ind] /= frame_num;
+		printf("%d ", avg_homography[avg_ind]);
+	}
+	printf("\n");
+
+	for (int f_ind = 0; f_ind < frame_num - 1; f_ind++) {
+		printf("Stabilizing frame %d...\r", f_ind);
+		R2Image stabilized_frame(*frames[f_ind]);
+
+		// Apply the homography matrix to every pixel in each frame.
+		for (int x = 0; x < frames[f_ind]->width; x++) {
+			for (int y = 0; y < frames[f_ind]->height; y++) {
+				double w_model = avg_homography[6] * x + avg_homography[7] * y + avg_homography[8];
+				int x_model = (avg_homography[0] * x + avg_homography[1] * y + avg_homography[2]) / w_model;
+				int y_model = (avg_homography[3] * x + avg_homography[4] * y + avg_homography[5]) / w_model;
+
+				stabilized_frame.Pixel(bound(x_model, stabilized_frame.width), bound(y_model, stabilized_frame.height)) =
+					frames[f_ind]->Pixel(x, y);
+			}
+		}
+
+
+		// Write the output jpg series.
+		printf("Writing out frame %d...\r", f_ind);
+		char f_char[100];
+		itoa(f_ind, f_char, 10);
+		char * folder_out = "frames_out/";
+		char file_out[100];
+		strcpy(file_out, folder_out);
+		strcat(file_out, f_char);
+		strcat(file_out, jpg);
+
+		stabilized_frame.Write(file_out);
+	}
+	printf("\n");
+	printf("Successfully stabilized %d frames.\n", frame_num);
 	return;
 }
 
