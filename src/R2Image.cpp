@@ -1061,16 +1061,17 @@ videoStabilization(int frame_num)
 {	
 	const char * jpg = ".jpg";
 	const char * zero = "0";
+	const char * input_folder = "frames_in/";
 
 	// Read frames into a vector
 	std::vector<R2Image*> frames;
-	int fileNameLength = 7;
-	for (int i = 0; i < frame_num; i++) {
+	int fileNameLength = 5;
+	for (int i = 1; i < frame_num; i++) {
 		char index[100];
 		itoa(i, index, 10);
 		char filename[100];
-		strcpy(filename, zero); // copy string one into the result.
-		for (int j = 0; j < fileNameLength - 1 - strlen(index); j++) {
+		strcpy(filename, input_folder); // copy string one into the result.
+		for (int j = 0; j < fileNameLength - strlen(index); j++) {
 			strcat(filename, zero);
 		}
 		strcat(filename, index); // append string two to the result.
@@ -1087,7 +1088,7 @@ videoStabilization(int frame_num)
 	std::vector<double> avg_homography = { 0,0,0,0,0,0,0,0,0 };
 	
 	// Track feats onto consecutive frames
-	for (int f = 0; f < frame_num - 1; f++) {
+	for (int f = 0; f < frame_num - 2; f++) {
 		std::vector<HarrisPixel> feats_accepted;
 		feats_accepted.reserve(feats.size());
 		std::vector<HarrisPixel> next_accepted;
@@ -1096,15 +1097,15 @@ videoStabilization(int frame_num)
 		// Feature tracking on the next frame.
 		std::vector<HarrisPixel> next_feats;
 		next_feats.reserve(feats.size());
-		printf("Start feature tracking for %d features.\n", feats.size());
+		//printf("Start feature tracking for %d features.\n", feats.size());
 		for (int feat_index = 0; feat_index < feats.size(); feat_index++) {
-			if (feat_index % 10 == 0) {
-				printf("Tracking feature No.%d...\r", feat_index);
-			}
+			//if (feat_index % 10 == 0) {
+			//	printf("Tracking feature No.%d...\r", feat_index);
+			//}
 			HarrisPixel matchPix = frames[f]->Search(*frames[f], *frames[f + 1], feats[feat_index]);
 			next_feats.push_back(matchPix);
 		}
-		printf("%d features matched.			\n", next_feats.size());
+		//printf("%d features matched.			\n", next_feats.size());
 
 		//RANSAC elimination (eliminate in both frames)
 
@@ -1208,7 +1209,7 @@ videoStabilization(int frame_num)
 		}
 		*/
 
-		printf("Trackable features remaining: %d\n", next_accepted.size());
+		//printf("Trackable features remaining: %d\n", next_accepted.size());
 
 		feats = next_accepted;
 
@@ -1216,7 +1217,7 @@ videoStabilization(int frame_num)
 		for (int hom_ind = 0; hom_ind < homography_matrix.size(); hom_ind++) {
 			avg_homography[hom_ind] += homography_matrix[hom_ind];
 		}
-		printf("---------------------------------------\n");
+		//printf("---------------------------------------\n");
 	}
 
 	printf("Final avg homography matrix: ");
@@ -1226,9 +1227,9 @@ videoStabilization(int frame_num)
 	}
 	printf("\n");
 
-	for (int f_ind = 0; f_ind < frame_num - 1; f_ind++) {
+	for (int f_ind = 0; f_ind < frame_num - 2; f_ind++) {
 		printf("Stabilizing frame %d...\r", f_ind);
-		R2Image stabilized_frame(*frames[f_ind]);
+		R2Image stabilized_frame(frames[f_ind]->width, frames[f_ind]->height);
 
 		// Apply the homography matrix to every pixel in each frame.
 		for (int x = 0; x < frames[f_ind]->width; x++) {
