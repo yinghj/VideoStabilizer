@@ -1,33 +1,32 @@
 ﻿  R2Image.cpp
-R2Image.cpp(358): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-R2Image.cpp(417): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
-R2Image.cpp(453): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-R2Image.cpp(482): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(359): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(418): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+R2Image.cpp(454): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
 R2Image.cpp(483): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-R2Image.cpp(570): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-R2Image.cpp(584): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(642): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(666): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(687): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(866): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(987): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(996): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(484): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(571): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(585): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(643): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(667): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(688): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(867): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(988): warning C4018: “<”: 有符号/无符号不匹配
 R2Image.cpp(997): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-R2Image.cpp(1024): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(998): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
 R2Image.cpp(1025): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-R2Image.cpp(1074): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(1101): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(1174): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(1183): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-R2Image.cpp(1184): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-R2Image.cpp(1198): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(1217): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(1224): warning C4018: “<”: 有符号/无符号不匹配
-R2Image.cpp(1238): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-R2Image.cpp(1239): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
-R2Image.cpp(1226): warning C4477: “printf”: 格式字符串“%d”需要类型“int”的参数，但可变参数 1 拥有了类型“double”
+R2Image.cpp(1026): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(1076): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(1100): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(1119): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(1129): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(1157): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(1178): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(1304): warning C4018: “<”: 有符号/无符号不匹配
+R2Image.cpp(1308): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(1309): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+R2Image.cpp(1328): warning C4018: “<”: 有符号/无符号不匹配
   正在生成代码
-  1 of 812 functions ( 0.1%) were compiled, the rest were copied from previous compilation.
+  1 of 806 functions ( 0.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
     1 functions had inline decision re-evaluated but remain unchanged
   已完成代码的生成
