@@ -566,6 +566,7 @@ Harris(double sigma)
 		topOneFifty.push_back(emptyHarrisPixel);
 	}
 
+	printf("Calculating Harris score for each pixel...\r");
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++) {
 			int minHarris = topOneFifty.back().harrisScore;
@@ -1057,28 +1058,42 @@ blendOtherImageHomography(R2Image * otherImage)
 	return;
 }
 
+double averageSmooth(std::vector<int> vector) {
+	double sum = 0;
+	for (int i = 0; i < vector.size(); i++) {
+		sum += vector[i];
+	}
+	sum = sum / vector.size();
+	return sum;
+}
+
+
 std::vector<double> gaussianSmooth(std::vector<int> vector, int sigma) {
 	// Gaussian smooth
 	static const double PI = 3.1415;
-	int KERNEL_SIZE = sigma * 6 + 1;
-	double *kernel = new double[KERNEL_SIZE];
+	int KERNEL_SIZE = 6 * sigma + 1;
+	std::vector<double> kernel;
 	double sum = 0.0;
 	for (int i = 0; i < KERNEL_SIZE; i++) {
 		int x = i - 3 * sigma;
-		kernel[i] = 1 / sqrt(2 * PI * sigma * sigma) * exp((0 - x * x) / (2 * sigma * sigma));
-		sum += kernel[i];
+		double kernel_val = 1 / sqrt(2 * PI * sigma * sigma) * exp((0 - x * x) / (2 * sigma * sigma));
+		sum += kernel_val;
+		kernel.push_back(kernel_val);
 	}
 	// Normalize the kernel.
 	for (int i = 0; i < KERNEL_SIZE; i++) {
 		kernel[i] = kernel[i] / sum;
 	}
 	std::vector<double> tempVector;
+	tempVector.reserve(vector.size());
+
 	for (int i = 0; i < vector.size(); i++) {
 		tempVector.push_back(0);
 		for (int x = 0 - 3 * sigma; x <= 3 * sigma; x++) {
 			tempVector[i] += vector[bound(i + x, vector.size())] * kernel[x + 3 * sigma];
 		}
 	}
+
 	return tempVector;
 }
 
@@ -1102,21 +1117,32 @@ videoStabilization(int frame_num)
 		}
 		strcat(filename, index); // append string two to the result.
 		strcat(filename, jpg);
+		printf("Reading %d images...\r", i);
 		R2Image *other_image = new R2Image(filename);
 		frames.push_back(other_image);
 	}
+	printf("\n");
 
 	// Video stabilization
 
 	// Harris on the first frame
 	R2Image harrisImage(*frames[0]);
+	printf("Finding 150 features on the first frame...\r");
 	std::vector<HarrisPixel> feats = harrisImage.Harris(2.0);
+	printf("150 features found                        \n\n");
 	std::vector<int> x_trans_seq;
 	std::vector<int> y_trans_seq;
 	x_trans_seq.push_back(0);
 	y_trans_seq.push_back(0);
+
 	// Track feats onto consecutive frames
 	for (int f = 0; f < frames.size()-1; f++) {
+		if (feats.size() < 10) {
+			R2Image new_harrisImage(*frames[f]);
+			printf("Finding 150 features on the %dth frame...\r", f+1);
+			feats = new_harrisImage.Harris(2.0);
+			printf("150 features found                        \n\n");
+		}
 		std::vector<HarrisPixel> feats_accepted;
 		feats_accepted.reserve(feats.size());
 		std::vector<HarrisPixel> next_accepted;
@@ -1146,7 +1172,6 @@ videoStabilization(int frame_num)
 
 		for (int n = 0; n < N; n++) {
 			int num_inliner = 0;
-			float length = -1.0;
 			int rand_index = rand() % next_feats.size();
 
 			std::vector<int> temp_accept;
@@ -1295,33 +1320,42 @@ videoStabilization(int frame_num)
 	}
 
 	printf("Smoothing motion sequence...\n");
-	std::vector<double> smoothX = gaussianSmooth(x_trans_seq, 2);
-	std::vector<double> smoothY = gaussianSmooth(y_trans_seq, 2);
-	//double x_avg = accumulate(x_trans_seq.begin(), x_trans_seq.end(), 0.0) / x_trans_seq.size();
-	//double y_avg = accumulate(y_trans_seq.begin(), y_trans_seq.end(), 0.0) / y_trans_seq.size();
+	std::vector<double> smoothX = gaussianSmooth(x_trans_seq, 6);
+	std::vector<double> smoothY = gaussianSmooth(y_trans_seq, 6);
+	//double x_avg = averageSmooth(x_trans_seq);
+	//double y_avg = averageSmooth(y_trans_seq);
 
 
 	for (int f_ind = 0; f_ind < frames.size(); f_ind++) {
-		printf("Stabilizing frame %d...\r", f_ind);
+		if (f_ind % 50 == 0) {
+			printf("Stabilizing frame %d...\r", f_ind);
+		}
 		R2Image stabilized_frame(frames[f_ind]->width, frames[f_ind]->height);
 
-		int x_stab = round(x_trans_seq[f_ind] - smoothX[f_ind]);
-		int y_stab = round(y_trans_seq[f_ind] - smoothX[f_ind]);
+		double x_stab = x_trans_seq[f_ind] - smoothX[f_ind];
+		double y_stab = y_trans_seq[f_ind] - smoothY[f_ind];
 
 		// Apply the homography matrix to every pixel in each frame.
 		for (int x = 0; x < frames[f_ind]->width; x++) {
 			for (int y = 0; y < frames[f_ind]->height; y++) {
-				if (x + x_stab > 0 && x + x_stab < frames[f_ind]->width && y + y_stab > 0 && y + y_stab < frames[f_ind]->height) {
-					stabilized_frame.Pixel(x, y) = frames[f_ind]->Pixel(x + x_stab, y + y_stab);
+				int new_x = round(x + x_stab);
+				int new_y = round(y + y_stab);
+				if (new_x >= 0 && new_x < frames[f_ind]->width && new_y >= 0 && new_y < frames[f_ind]->height) {
+					stabilized_frame.Pixel(x, y) = frames[f_ind]->Pixel(new_x, new_y);
+				}
+				else {
+					stabilized_frame.Pixel(x, y) = R2Pixel(0, 0, 0, 1);
 				}
 			}
 		}
 
 
 		// Write the output jpg series.
-		printf("Writing out frame %d...\r", f_ind);
+		if (f_ind % 50 == 0) {
+			printf("Writing out frame %d...\r", f_ind);
+		}
 		char f_char[100];
-		itoa(f_ind+1, f_char, 10);
+		itoa(f_ind + 1, f_char, 10);
 		char * folder_out = "ait_test_out/";
 		char file_out[100];
 		strcpy(file_out, folder_out);

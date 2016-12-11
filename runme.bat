@@ -2,6 +2,6 @@
 
 REM generate the result pictures
 
-src\Release\imgpro input\0000000.jpg output\0000000_blend.jpg -videoStabilization 20
+src\Release\imgpro input\0000000.jpg output\0000000_blend.jpg -videoStabilization 285
 
 pause
