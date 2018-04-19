@@ -207,10 +207,12 @@ main(int argc, char **argv)
       image->Sharpen();
     }
     else if (!strcmp(*argv, "-matchTranslation")) {
-      CheckOption(*argv, argc, 2);
+      CheckOption(*argv, argc, 4);
       R2Image *other_image = new R2Image(argv[1]);
-      argv += 2, argc -= 2;
-      image->blendOtherImageTranslated(other_image);
+      int num_features_to_match = atoi(argv[2]);
+      float search_win_perc = atof(argv[3]);
+      argv += 4, argc -= 4;
+      image->matchOtherImageTranslated(other_image, 2.0, num_features_to_match, search_win_perc);
       delete other_image;
     }
     else if (!strcmp(*argv, "-matchHomography")) {

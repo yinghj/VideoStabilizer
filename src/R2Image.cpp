@@ -453,10 +453,10 @@ int bound(int value, int max) {
 }
 
 HarrisPixel R2Image::
-Search(R2Image originalImage, R2Image otherImage, HarrisPixel featurePixel) {
+Search(R2Image originalImage, R2Image otherImage, HarrisPixel featurePixel, float search_win_perc) {
 	// Search matching window within close neighborhood of the original window
-	int searchWidth = 0.25 * otherImage.width;
-	int searchHeight = 0.25 * otherImage.height;
+	int searchWidth = search_win_perc * otherImage.width;
+	int searchHeight = search_win_perc * otherImage.height;
 	HarrisPixel matchingHarrisPixel;
 
 	// Find the matching window (minimize sum squared distance)
@@ -674,7 +674,7 @@ Sharpen()
 }
 
 void R2Image::
-blendOtherImageTranslated(R2Image* otherImage)
+matchOtherImageTranslated(R2Image* otherImage, float harris_sigma, int num_features_to_match, float search_win_perc)
 {
 	// find at least 100 features on this image, and another 100 on the "otherImage". Based on these,
 	// compute the matching translation (pixel precision is OK), and blend the translated "otherImage"
@@ -682,10 +682,8 @@ blendOtherImageTranslated(R2Image* otherImage)
 
 	R2Image markedImage(*otherImage);
 
-
-	const int NUM_FEATURES_MATCH = 150;
 	R2Image harrisImage(*this);
-	std::vector<HarrisPixel> topFeatures = harrisImage.Harris(2.0, NUM_FEATURES_MATCH);
+	std::vector<HarrisPixel> topFeatures = harrisImage.Harris(harris_sigma, num_features_to_match);
 
 	std::vector<HarrisPixel> matchingFeatures;
 	for (int x = 0; x < topFeatures.size(); x++) {
@@ -693,7 +691,7 @@ blendOtherImageTranslated(R2Image* otherImage)
 		printf("Searching for matching Harris feature No. %d...\r", x+1);
 		fflush(stdout);
 
-		HarrisPixel matchingPixel = Search(*this, *otherImage, topFeatures[x]);
+		HarrisPixel matchingPixel = Search(*this, *otherImage, topFeatures[x], search_win_perc);
 		matchingFeatures.push_back(matchingPixel);
 	}
 
@@ -711,7 +709,7 @@ blendOtherImageTranslated(R2Image* otherImage)
 	for (int n = 0; n < N; n++) {
 		int num_inliner = 0;
 
-		int rand_index = rand() % NUM_FEATURES_MATCH;
+		int rand_index = rand() % num_features_to_match;
 
 		HarrisPixel randPixel = matchingFeatures[rand_index];
 		
@@ -920,7 +918,7 @@ blendOtherImageHomography(R2Image * otherImage)
 
 	std::vector<HarrisPixel> matchingFeatures;
 	for (int x = 0; x < topFeatures.size(); x++) {
-		HarrisPixel matchingPixel = Search(*this, *otherImage, topFeatures[x]);
+		HarrisPixel matchingPixel = Search(*this, *otherImage, topFeatures[x], 0.05 /** search_win_perc **/);
 		matchingFeatures.push_back(matchingPixel);
 	}
 
@@ -1208,7 +1206,7 @@ videoStabilization(int frame_num, char* input_folder)
 		next_feats.reserve(feats.size());
 		printf("Tracking %lu features...\r", feats.size());
 		for (int feat_index = 0; feat_index < feats.size(); feat_index++) {
-			HarrisPixel matchPix = frames[f]->Search(*frames[f], *frames[f + 1], feats[feat_index]);
+			HarrisPixel matchPix = frames[f]->Search(*frames[f], *frames[f + 1], feats[feat_index], 0.1 /** search_win_perc **/);
 			next_feats.push_back(matchPix);
 		}
 		printf("%lu features matched.			\r", next_feats.size());

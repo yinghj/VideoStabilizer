@@ -84,7 +84,7 @@ class R2Image {
   void Sharpen(void);
 
   // further operations
-  void blendOtherImageTranslated(R2Image* otherImage);
+  void matchOtherImageTranslated(R2Image* otherImage, float harris_sigma, int num_features_to_match, float search_win_perc);
   void blendOtherImageHomography(R2Image* otherImage);
   void videoStabilization(int frame_num, char* input_folder);
 
