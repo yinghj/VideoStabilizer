@@ -52,7 +52,7 @@ ShowUsage(void)
 {
   // Print usage message and exit
   fprintf(stderr, "Usage: imgpro input_image output_image [  -option [arg ...] ...]\n");
-  fprintf(stderr, options);
+  fprintf(stderr, "%s", options);
   exit(EXIT_FAILURE);
 }
 
@@ -171,15 +171,15 @@ main(int argc, char **argv)
       argv += 2, argc -=2;
       image->Brighten(factor);
     }
-	else if (!strcmp(*argv, "-sobelX")) {
+  	else if (!strcmp(*argv, "-sobelX")) {
       argv++, argc--;
       image->SobelX();
     }
-	else if (!strcmp(*argv, "-sobelY")) {
+  	else if (!strcmp(*argv, "-sobelY")) {
       argv++, argc--;
       image->SobelY();
     }
-	else if (!strcmp(*argv, "-log")) {
+  	else if (!strcmp(*argv, "-log")) {
       argv++, argc--;
       image->LoG();
     }
@@ -189,11 +189,12 @@ main(int argc, char **argv)
       argv += 2, argc -= 2;
       image->ChangeSaturation(factor);
     }
-	else if (!strcmp(*argv, "-harris")) {
-      CheckOption(*argv, argc, 2);
+    else if (!strcmp(*argv, "-harris")) {
+      CheckOption(*argv, argc, 3);
       double sigma = atof(argv[1]);
-      argv += 2, argc -= 2;
-      image->Harris(sigma);
+      int num_top_features = atoi(argv[2]);
+      argv += 3, argc -= 3;
+      image->MarkHarrisFeatures(sigma, num_top_features);
     }
     else if (!strcmp(*argv, "-blur")) {
       CheckOption(*argv, argc, 2);
@@ -219,12 +220,13 @@ main(int argc, char **argv)
       image->blendOtherImageHomography(other_image);
       delete other_image;
     }
-	else if (!strcmp(*argv, "-videoStabilization")) {
-		CheckOption(*argv, argc, 2);
-		int frame_num = atoi(argv[1]);
-		argv += 2, argc -= 2;
-		image->videoStabilization(frame_num);
-	}
+  	else if (!strcmp(*argv, "-videoStabilization")) {
+  		CheckOption(*argv, argc, 3);
+  		int frame_num = atoi(argv[1]);
+      char* input_folder = argv[2];
+  		argv += 3, argc -= 3;
+  		image->videoStabilization(frame_num, input_folder);
+  	}
     else {
       // Unrecognized program argument
       fprintf(stderr, "image: invalid option: %s\n", *argv);

@@ -1,9 +1,6 @@
 // Source file for image class
 
-
-
 // Include files
-
 #include "R2/R2.h"
 #include "R2Pixel.h"
 #include "R2Image.h"
@@ -13,12 +10,11 @@
 #include <algorithm>
 #include <iostream>
 #include <ctime>
-#include <numeric>                                                              
+#include <numeric>   
+#include <stdlib.h>
+#include <float.h>
 
 using namespace std;
-
-
-
 
 ////////////////////////////////////////////////////////////////////////
 // Constructors/Destructors
@@ -34,8 +30,6 @@ R2Image(void)
 {
 }
 
-
-
 R2Image::
 R2Image(const char *filename)
   : pixels(NULL),
@@ -46,8 +40,6 @@ R2Image(const char *filename)
   // Read image
   Read(filename);
 }
-
-
 
 R2Image::
 R2Image(int width, int height)
@@ -60,8 +52,6 @@ R2Image(int width, int height)
   pixels = new R2Pixel [ npixels ];
   assert(pixels);
 }
-
-
 
 R2Image::
 R2Image(int width, int height, const R2Pixel *p)
@@ -79,8 +69,6 @@ R2Image(int width, int height, const R2Pixel *p)
     pixels[i] = p[i];
 }
 
-
-
 R2Image::
 R2Image(const R2Image& image)
   : pixels(NULL),
@@ -97,8 +85,6 @@ R2Image(const R2Image& image)
   for (int i = 0; i < npixels; i++)
     pixels[i] = image.pixels[i];
 }
-
-
 
 R2Image::
 ~R2Image(void)
@@ -131,7 +117,6 @@ operator=(const R2Image& image)
   // Return image
   return *this;
 }
-
 
 void R2Image::
 svdTest(void)
@@ -255,7 +240,6 @@ svdTest(void)
 
 ////////////////////////////////////////////////////////////////////////
 // Image processing functions
-// YOU IMPLEMENT THE FUNCTIONS IN THIS SECTION
 ////////////////////////////////////////////////////////////////////////
 
 // Per-pixel Operations ////////////////////////////////////////////////
@@ -406,6 +390,7 @@ Blur(double sigma)
 	*this = tempImgY;
 }
 
+// Helper functions
 
 bool custom_sort_func(const HarrisPixel &left, const HarrisPixel &right) {
     return left.harrisScore > right.harrisScore;
@@ -418,13 +403,9 @@ float ssd(R2Pixel a, R2Pixel b) {
 		+ (a[3] - b[3]) * (a[3] - b[3]));
 }
 
-
-void R2Image::line(int x0, int x1, int y0, int y1, float r, float g, float b)
-{
-	int startx = x0;
-	int starty = y0;
-	if (x0>x1)
-	{
+void R2Image::
+line(int x0, int x1, int y0, int y1, float r, float g, float b) {
+	if (x0 > x1) {
 		int x = y1;
 		y1 = y0;
 		y0 = x;
@@ -437,39 +418,32 @@ void R2Image::line(int x0, int x1, int y0, int y1, float r, float g, float b)
 	int deltay = y1 - y0;
 	float error = 0;
 	float deltaerr = 0.0;
-	if (deltax != 0) deltaerr = fabs(float(float(deltay) / deltax));    // Assume deltax != 0 (line is not vertical),
-																		// note that this division needs to be done in a way that preserves the fractional part
+	if (deltax!=0) deltaerr = fabs(float(float(deltay) / deltax));    // Assume deltax != 0 (line is not vertical),
+	// note that this division needs to be done in a way that preserves the fractional part
 	int y = y0;
-	for (int x = x0; x <= x1; x++)
-	{
-		if (y > 0 && y < height - 1) {
-			Pixel(x, y).Reset(r, g, b, 1.0);
-		}
+	for (int x= x0; x <= x1; x++) {
+		Pixel(x,y).Reset(r,g,b,1.0);
 		error = error + deltaerr;
-		if (error >= 0.5)
-		{
-			if (deltay>0) y = y + 1;
+		if (error >= 0.5) {
+			if (deltay > 0) y = y + 1;
 			else y = y - 1;
 
 			error = error - 1.0;
 		}
 	}
-	//if (startx>3 && startx<width - 3 && starty>3 && starty<height - 3)
-	//{
-	//	for (int x = startx - 3; x <= startx + 3; x++)
-	//	{
-	//		for (int y = starty - 3; y <= starty + 3; y++)
-	//		{
-	//			Pixel(x, y).Reset(r, g, b, 1.0);
-	//		}
-	//	}
-	//}
+	if (x0 > 3 && x0 < width - 3 && y0 > 3 && y0 < height - 3) {
+		for(int x = x0-3; x <= x0+3; x++) {
+			for(int y = y0-3; y<=y0+3; y++) {
+				Pixel(x,y).Reset(r,g,b,1.0);
+			}
+		}
+	}
 }
 
 // Bound normalizes the edges of a filtered image that cannot be filtered by
 // the kernel.
 int bound(int value, int max) {
-	if (value <= 0) {
+	if (value < 0) {
 		return 0;
 	}
 	if (value >= max) {
@@ -480,26 +454,49 @@ int bound(int value, int max) {
 
 HarrisPixel R2Image::
 Search(R2Image originalImage, R2Image otherImage, HarrisPixel featurePixel) {
-	int searchWidth = 0.05 * otherImage.width;
-	int searchHeight = 0.05 * otherImage.height;
+	// Search matching window within close neighborhood of the original window
+	int searchWidth = 0.25 * otherImage.width;
+	int searchHeight = 0.25 * otherImage.height;
 	HarrisPixel matchingHarrisPixel;
-	float minSSD = 100000.0;
-	for (int i = featurePixel.posx - searchWidth; i < featurePixel.posx + searchWidth; i++) {
-		for (int j = featurePixel.posy - searchHeight; j < featurePixel.posy + searchHeight; j++) {
-			if (i < otherImage.width-1 && i > 0 && j < otherImage.height-1 && j > 0) {
-				float newSSD = 0.0;
-				int count = 0;
-				for (int x = -5; x < 6; x++) {
-					for (int y = -5; y < 6; y++) {
-						newSSD += ssd(originalImage.Pixel(bound(featurePixel.posx + x, width), bound(featurePixel.posy + y, height)),
-							otherImage.Pixel(bound(i + x, width), bound(j + y, width)));
-					}
+
+	// Find the matching window (minimize sum squared distance)
+	const int WINDOW_SIZE = 5;
+
+	float minSSD = FLT_MAX;
+
+	int searchStart_x = featurePixel.posx - searchWidth;
+	int searchEnd_x = bound(featurePixel.posx + searchWidth, width);
+
+	int searchStart_y = featurePixel.posy - searchHeight;
+	int searchEnd_y = bound(featurePixel.posy + searchHeight, height);
+
+	for (int i = searchStart_x; i <= searchEnd_x; i++) {
+		for (int j = searchStart_y; j <= searchEnd_y; j++) {
+			// Calculate average pixel-wise SSD in the window.
+			float newSSD = 0.0;
+			int pix_count = 0;
+
+			for (int x = 0 - WINDOW_SIZE; x <= WINDOW_SIZE; x++) {
+				for (int y = 0 - WINDOW_SIZE; y <= WINDOW_SIZE; y++) {
+					// Watch for out-of-bounds situation.
+					newSSD += ssd(
+						originalImage.Pixel(
+							bound(featurePixel.posx + x, width), 
+							bound(featurePixel.posy + y, height)),
+						otherImage.Pixel(
+							bound(i + x, width), 
+							bound(j + y, width)));
+					pix_count += 1;
 				}
-				if (newSSD < minSSD) {
-					matchingHarrisPixel.posx = i;
-					matchingHarrisPixel.posy = j;
-					minSSD = newSSD;
-				}
+			}
+
+			newSSD = newSSD / pix_count;
+			
+			// Check if minSSD.
+			if (newSSD < minSSD) {
+				matchingHarrisPixel.posx = i;
+				matchingHarrisPixel.posy = j;
+				minSSD = newSSD;
 			}
 		}
 	}
@@ -508,7 +505,7 @@ Search(R2Image originalImage, R2Image otherImage, HarrisPixel featurePixel) {
 }
 
 std::vector<HarrisPixel> R2Image::
-Harris(double sigma)
+Harris(double sigma, int num_top_features)
 {
 	// Harris corner detector. Make use of the previously developed filters, such as the Gaussian blur filter
 	// Output should be 50% grey at flat regions, white at corners and black/dark near edges
@@ -530,11 +527,15 @@ Harris(double sigma)
 
 	R2Image tempSobelXY(width, height);
 
+	// Calculate Autocorrection Matrix [A].
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++) {
+			// I_x * I_y
 			tempSobelXY.Pixel(i, j)[0] = tempSobelX.Pixel(i, j)[0] * tempSobelY.Pixel(i, j)[0];
-			tempSobelX.Pixel(i, j)[0] *= tempSobelX.Pixel(i, j)[0];
-			tempSobelY.Pixel(i, j)[0] *= tempSobelY.Pixel(i, j)[0];
+			// I_x ^ 2
+			tempSobelX.Pixel(i, j)[0] = tempSobelX.Pixel(i, j)[0] * tempSobelX.Pixel(i, j)[0];
+			// I_y ^ 2
+			tempSobelY.Pixel(i, j)[0] = tempSobelY.Pixel(i, j)[0] * tempSobelY.Pixel(i, j)[0];
 		}
 	}
 
@@ -545,47 +546,55 @@ Harris(double sigma)
 
 	R2Image harris(width, height);
 
+	// Calculate Harris Score for each pixel.
+	printf("Calculating Harris score for each pixel...\r");
+	fflush(stdout);
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++) {
+			// Harris Score = Det(A) - alpha * (Tr(A)^2)
 			harris.Pixel(i, j)[0] = tempSobelX.Pixel(i, j)[0] * tempSobelY.Pixel(i, j)[0]
-				- tempSobelXY.Pixel(i, j)[0] * tempSobelXY.Pixel(i, j)[0]
-				- 0.04 * (tempSobelX.Pixel(i, j)[0] + tempSobelY.Pixel(i, j)[0])
-				* (tempSobelX.Pixel(i, j)[0] + tempSobelY.Pixel(i, j)[0]);
+								  - tempSobelXY.Pixel(i, j)[0] * tempSobelXY.Pixel(i, j)[0]
+								  - 0.04 * ((tempSobelX.Pixel(i, j)[0] + tempSobelY.Pixel(i, j)[0])
+										 *  (tempSobelX.Pixel(i, j)[0] + tempSobelY.Pixel(i, j)[0]));
 			harris.Pixel(i, j)[1] = harris.Pixel(i, j)[0];
 			harris.Pixel(i, j)[2] = harris.Pixel(i, j)[0];
 		}
 	}
 
-	std::vector<HarrisPixel> topOneFifty;
+	// Choose local maximums as top Harris features.
+	std::vector<HarrisPixel> topFeatures;
 
-	for (int x = 0; x < 150; x++) {
+	for (int x = 0; x < num_top_features; x++) {
 		HarrisPixel emptyHarrisPixel;
 		emptyHarrisPixel.posx = -100;
 		emptyHarrisPixel.posy = -100;
 		emptyHarrisPixel.harrisScore = -100.0;
-		topOneFifty.push_back(emptyHarrisPixel);
+		topFeatures.push_back(emptyHarrisPixel);
 	}
 
-	printf("Calculating Harris score for each pixel...\r");
+	// Only pick pixels that have high enough harris score and are far apart enough from other feature pixels.
+	const int DIST_THRESHOLD = 16*16;
 	for (int i = 0; i < width; i++) {
 		for (int j = 0; j < height; j++) {
-			int minHarris = topOneFifty.back().harrisScore;
 
-			HarrisPixel mHarrisPixel;
-			mHarrisPixel.posx = i;
-			mHarrisPixel.posy = j;
-			mHarrisPixel.harrisScore = harris.Pixel(i, j)[0];
+			int minHarrisScore = topFeatures.back().harrisScore;
+
+			HarrisPixel currentHarrisPixel;
+			currentHarrisPixel.posx = i;
+			currentHarrisPixel.posy = j;
+			currentHarrisPixel.harrisScore = harris.Pixel(i, j)[0];
 
 			bool topScore = 1;
-			if (minHarris > mHarrisPixel.harrisScore) {
+			if (minHarrisScore > currentHarrisPixel.harrisScore) {
 				topScore = 0;
 			}
 
 			bool apart = 1;
 			if (topScore) {
-				for (int x = 0; x < topOneFifty.size(); x++) {
-					if (((topOneFifty[x].posx - i) * (topOneFifty[x].posx - i) +
-						(topOneFifty[x].posy - j) * (topOneFifty[x].posy - j) <= 100)) {
+				for (int x = 0; x < topFeatures.size(); x++) {
+					// Check distance.
+					if (((topFeatures[x].posx - i) * (topFeatures[x].posx - i) +
+						(topFeatures[x].posy - j) * (topFeatures[x].posy - j) <= DIST_THRESHOLD)) {
 						apart = 0;
 						break;
 					}
@@ -593,14 +602,47 @@ Harris(double sigma)
 			}
 
 			if (topScore * apart) {
-				topOneFifty.pop_back();
-				topOneFifty.push_back(mHarrisPixel);
-				std::sort(std::begin(topOneFifty), std::end(topOneFifty), custom_sort_func);
+				topFeatures.pop_back();
+				topFeatures.push_back(currentHarrisPixel);
+				std::sort(std::begin(topFeatures), std::end(topFeatures), custom_sort_func);
 			}
 		}
 	}
 
-	return topOneFifty;
+	return topFeatures;
+}
+
+void R2Image::
+MarkHarrisFeatures(double sigma, int num_top_features) {
+	R2Image harrisImage(*this);
+
+	printf("Finding top %d Harris features...\r", num_top_features);
+	fflush(stdout);
+
+	std::vector<HarrisPixel> topFeatures = harrisImage.Harris(sigma, num_top_features);
+	
+	printf("Marking each Harris feature...\r");
+	fflush(stdout);
+	for (int i = 0; i < topFeatures.size(); i++) {
+		int x = topFeatures[i].posx;
+		int y = topFeatures[i].posy;
+		// Mark Harris Features with small squares at feature pixels.
+		// Define square color
+		float r = 0.0;
+		float g = 1.0;
+		float b = 0.0;
+
+		// Draw square marks
+		for (int j = -2; j <= 2; j++) {
+			// Watch for out-of-bound cases
+			int sqr_x = bound(x + j, width);
+			for (int k = -2; k <= 2; k++) {
+				int sqr_y = bound(y + k, height);
+				harrisImage.Pixel(sqr_x, sqr_y).Reset(r,g,b,1.0);
+			}
+		}
+	}
+	*this = harrisImage;
 }
 
 
@@ -632,22 +674,33 @@ Sharpen()
 }
 
 void R2Image::
-blendOtherImageTranslated(R2Image * otherImage)
+blendOtherImageTranslated(R2Image* otherImage)
 {
 	// find at least 100 features on this image, and another 100 on the "otherImage". Based on these,
 	// compute the matching translation (pixel precision is OK), and blend the translated "otherImage"
 	// into this image with a 50% opacity.
+
+	R2Image markedImage(*otherImage);
+
+
+	const int NUM_FEATURES_MATCH = 150;
 	R2Image harrisImage(*this);
-	std::vector<HarrisPixel> topOneFifty = harrisImage.Harris(2.0);
+	std::vector<HarrisPixel> topFeatures = harrisImage.Harris(2.0, NUM_FEATURES_MATCH);
 
 	std::vector<HarrisPixel> matchingFeatures;
-	for (int x = 0; x < topOneFifty.size(); x++) {
-		HarrisPixel matchingPixel = Search(*this, *otherImage, topOneFifty[x]);
+	for (int x = 0; x < topFeatures.size(); x++) {
+
+		printf("Searching for matching Harris feature No. %d...\r", x+1);
+		fflush(stdout);
+
+		HarrisPixel matchingPixel = Search(*this, *otherImage, topFeatures[x]);
 		matchingFeatures.push_back(matchingPixel);
 	}
 
-	R2Image markedImage(*otherImage);
+	printf("\n");
+	fflush(stdout);
 	
+	// RANSAC
 	const int N = 10;
 	// using sqr of length
 	const float THRESHOLD = 9;
@@ -657,19 +710,19 @@ blendOtherImageTranslated(R2Image * otherImage)
 
 	for (int n = 0; n < N; n++) {
 		int num_inliner = 0;
-		float length = -1.0;
-		int rand_index = rand() % 150;
+
+		int rand_index = rand() % NUM_FEATURES_MATCH;
 
 		HarrisPixel randPixel = matchingFeatures[rand_index];
 		
-		int u1 = randPixel.posx - topOneFifty[rand_index].posx;
-		int u2 = randPixel.posy - topOneFifty[rand_index].posy;
+		int u1 = randPixel.posx - topFeatures[rand_index].posx;
+		int u2 = randPixel.posy - topFeatures[rand_index].posy;
 
-		for (int x = 0; x < topOneFifty.size(); x++) {
+		for (int x = 0; x < topFeatures.size(); x++) {
 			int m = matchingFeatures[x].posx;
 			int n = matchingFeatures[x].posy;
-			int p = topOneFifty[x].posx;
-			int q = topOneFifty[x].posy;
+			int p = topFeatures[x].posx;
+			int q = topFeatures[x].posy;
 			
 			int v1 = m - p;
 			int v2 = n - q;
@@ -686,11 +739,11 @@ blendOtherImageTranslated(R2Image * otherImage)
 		}
 	}
 
-	for (int x = 0; x < topOneFifty.size(); x++) {
+	for (int x = 0; x < topFeatures.size(); x++) {
 		int m = matchingFeatures[x].posx;
 		int n = matchingFeatures[x].posy;
-		int p = topOneFifty[x].posx;
-		int q = topOneFifty[x].posy;
+		int p = topFeatures[x].posx;
+		int q = topFeatures[x].posy;
 
 		int v1 = m - p;
 		int v2 = n - q;
@@ -860,13 +913,14 @@ blendOtherImageHomography(R2Image * otherImage)
 {
 	// find at least 100 features on this image, and another 100 on the "otherImage". Based on these,
 	// compute the matching homography, and blend the transformed "otherImage" into this image with a 50% opacity.
+	const int NUM_FEATURES_MATCH = 150;
 
 	R2Image harrisImage(*this);
-	std::vector<HarrisPixel> topOneFifty = harrisImage.Harris(2.0);
+	std::vector<HarrisPixel> topFeatures = harrisImage.Harris(2.0, NUM_FEATURES_MATCH);
 
 	std::vector<HarrisPixel> matchingFeatures;
-	for (int x = 0; x < topOneFifty.size(); x++) {
-		HarrisPixel matchingPixel = Search(*this, *otherImage, topOneFifty[x]);
+	for (int x = 0; x < topFeatures.size(); x++) {
+		HarrisPixel matchingPixel = Search(*this, *otherImage, topFeatures[x]);
 		matchingFeatures.push_back(matchingPixel);
 	}
 
@@ -885,18 +939,18 @@ blendOtherImageHomography(R2Image * otherImage)
 		int num_inliner = 0;
 
 		// Randomly pick 4 points
-		int rand_index_1 = rand() % 150;
-		int rand_index_2 = rand() % 150;
+		int rand_index_1 = rand() % NUM_FEATURES_MATCH;
+		int rand_index_2 = rand() % NUM_FEATURES_MATCH;
 		while (rand_index_2 == rand_index_1) {
-			rand_index_2 = rand() % 150;
+			rand_index_2 = rand() % NUM_FEATURES_MATCH;
 		}
-		int rand_index_3 = rand() % 150;
+		int rand_index_3 = rand() % NUM_FEATURES_MATCH;
 		while (rand_index_3 == rand_index_1 || rand_index_3 == rand_index_2) {
-			rand_index_3 = rand() % 150;
+			rand_index_3 = rand() % NUM_FEATURES_MATCH;
 		}
-		int rand_index_4 = rand() % 150;
+		int rand_index_4 = rand() % NUM_FEATURES_MATCH;
 		while (rand_index_4 == rand_index_1 || rand_index_4 == rand_index_2 || rand_index_4 == rand_index_3) {
-			rand_index_4 = rand() % 150;
+			rand_index_4 = rand() % NUM_FEATURES_MATCH;
 		}
 
 		std::vector<int> inputX;
@@ -904,20 +958,20 @@ blendOtherImageHomography(R2Image * otherImage)
 		std::vector<int> outputX;
 		std::vector<int> outputY;
 
-		inputX.push_back(topOneFifty[rand_index_1].posx);
-		inputX.push_back(topOneFifty[rand_index_2].posx);
-		inputX.push_back(topOneFifty[rand_index_3].posx);
-		inputX.push_back(topOneFifty[rand_index_4].posx);
+		inputX.push_back(topFeatures[rand_index_1].posx);
+		inputX.push_back(topFeatures[rand_index_2].posx);
+		inputX.push_back(topFeatures[rand_index_3].posx);
+		inputX.push_back(topFeatures[rand_index_4].posx);
 
 		outputX.push_back(matchingFeatures[rand_index_1].posx);
 		outputX.push_back(matchingFeatures[rand_index_2].posx);
 		outputX.push_back(matchingFeatures[rand_index_3].posx);
 		outputX.push_back(matchingFeatures[rand_index_4].posx);
 
-		inputY.push_back(topOneFifty[rand_index_1].posy);
-		inputY.push_back(topOneFifty[rand_index_2].posy);
-		inputY.push_back(topOneFifty[rand_index_3].posy);
-		inputY.push_back(topOneFifty[rand_index_4].posy);
+		inputY.push_back(topFeatures[rand_index_1].posy);
+		inputY.push_back(topFeatures[rand_index_2].posy);
+		inputY.push_back(topFeatures[rand_index_3].posy);
+		inputY.push_back(topFeatures[rand_index_4].posy);
 
 		outputY.push_back(matchingFeatures[rand_index_1].posy);
 		outputY.push_back(matchingFeatures[rand_index_2].posy);
@@ -986,11 +1040,11 @@ blendOtherImageHomography(R2Image * otherImage)
 			}
 		}
 
-		for (int x = 0; x < topOneFifty.size(); x++) {
+		for (int x = 0; x < topFeatures.size(); x++) {
 			int m = matchingFeatures[x].posx;
 			int n = matchingFeatures[x].posy;
-			int p = topOneFifty[x].posx;
-			int q = topOneFifty[x].posy;
+			int p = topFeatures[x].posx;
+			int q = topFeatures[x].posy;
 
 			int v1 = m - p;
 			int v2 = n - q;
@@ -1031,11 +1085,11 @@ blendOtherImageHomography(R2Image * otherImage)
 		}
 	}
 /*
-	for (int x = 0; x < topOneFifty.size(); x++) {
+	for (int x = 0; x < topFeatures.size(); x++) {
 		int m = matchingFeatures[x].posx;
 		int n = matchingFeatures[x].posy;
-		int p = topOneFifty[x].posx;
-		int q = topOneFifty[x].posy;
+		int p = topFeatures[x].posx;
+		int q = topFeatures[x].posy;
 
 		int v1 = m - p;
 		int v2 = n - q;
@@ -1098,27 +1152,28 @@ std::vector<double> gaussianSmooth(std::vector<int> vector, int sigma) {
 }
 
 void R2Image::
-videoStabilization(int frame_num)
+videoStabilization(int frame_num, char* input_folder)
 {	
-	const char * jpg = ".jpg";
-	const char * zero = "0";
-	const char * input_folder = "ait_test_in/pictures";
+	const char* jpg = ".jpg";
+	const char* zero = "0";
+	const int NUM_FEATURES_TRACKED = 150;
+	const float HARRIS_SIGMA = 2.0;
+	const int FILENAME_LENGTH = 5;
 
 	// Read frames into a vector
 	std::vector<R2Image*> frames;
-	int fileNameLength = 5;
-	for (int i = 1; i < frame_num; i++) {
+	for (int i = 1; i <= frame_num; i++) {
 		char index[100];
-		itoa(i, index, 10);
+		snprintf(index, 100, "%d", i);
 		char filename[100];
 		strcpy(filename, input_folder); // copy string one into the result.
-		for (int j = 0; j < fileNameLength - strlen(index); j++) {
+		for (int j = 0; j < FILENAME_LENGTH - strlen(index); j++) {
 			strcat(filename, zero);
 		}
 		strcat(filename, index); // append string two to the result.
 		strcat(filename, jpg);
 		printf("Reading %d images...\r", i);
-		R2Image *other_image = new R2Image(filename);
+		R2Image* other_image = new R2Image(filename);
 		frames.push_back(other_image);
 	}
 	printf("\n");
@@ -1127,9 +1182,9 @@ videoStabilization(int frame_num)
 
 	// Harris on the first frame
 	R2Image harrisImage(*frames[0]);
-	printf("Finding 150 features on the first frame...\r");
-	std::vector<HarrisPixel> feats = harrisImage.Harris(2.0);
-	printf("150 features found                        \n\n");
+	printf("Finding %d features on the first frame...\r", NUM_FEATURES_TRACKED);
+	std::vector<HarrisPixel> feats = harrisImage.Harris(HARRIS_SIGMA, NUM_FEATURES_TRACKED);
+	printf("%d features found                        \n\n", NUM_FEATURES_TRACKED);
 	std::vector<int> x_trans_seq;
 	std::vector<int> y_trans_seq;
 	x_trans_seq.push_back(0);
@@ -1139,9 +1194,9 @@ videoStabilization(int frame_num)
 	for (int f = 0; f < frames.size()-1; f++) {
 		if (feats.size() < 10) {
 			R2Image new_harrisImage(*frames[f]);
-			printf("Finding 150 features on the %dth frame...\r", f+1);
-			feats = new_harrisImage.Harris(2.0);
-			printf("150 features found                        \n\n");
+			printf("Finding %d features on the %dth frame...\r",NUM_FEATURES_TRACKED, f+1);
+			feats = new_harrisImage.Harris(HARRIS_SIGMA, NUM_FEATURES_TRACKED);
+			printf("%d features found                        \n\n", NUM_FEATURES_TRACKED);
 		}
 		std::vector<HarrisPixel> feats_accepted;
 		feats_accepted.reserve(feats.size());
@@ -1151,15 +1206,12 @@ videoStabilization(int frame_num)
 		// Feature tracking on the next frame.
 		std::vector<HarrisPixel> next_feats;
 		next_feats.reserve(feats.size());
-		printf("Tracking %d features...\r", feats.size());
+		printf("Tracking %lu features...\r", feats.size());
 		for (int feat_index = 0; feat_index < feats.size(); feat_index++) {
-			//if (feat_index % 10 == 0) {
-			//	printf("Tracking feature No.%d...\r", feat_index);
-			//}
 			HarrisPixel matchPix = frames[f]->Search(*frames[f], *frames[f + 1], feats[feat_index]);
 			next_feats.push_back(matchPix);
 		}
-		printf("%d features matched.			\r", next_feats.size());
+		printf("%lu features matched.			\r", next_feats.size());
 
 		//RANSAC elimination (eliminate in both frames)
 
@@ -1309,7 +1361,7 @@ videoStabilization(int frame_num)
 */
 		
 		feats = next_accepted;
-		printf("%d features accepted. \n", feats.size());
+		printf("%lu features accepted. \n", feats.size());
 
 		// Get translation vector
 		printf("Calculating %d translation vector: ", f+1);
@@ -1355,11 +1407,11 @@ videoStabilization(int frame_num)
 			printf("Writing out frame %d...\r", f_ind);
 		}
 		char f_char[100];
-		itoa(f_ind + 1, f_char, 10);
-		char * folder_out = "ait_test_out/";
+		snprintf(f_char, 100, "%d", f_ind + 1);
+		char folder_out[] = "out/";
 		char file_out[100];
 		strcpy(file_out, folder_out);
-		for (int j = 0; j < fileNameLength - strlen(f_char); j++) {
+		for (int j = 0; j < FILENAME_LENGTH - strlen(f_char); j++) {
 			strcat(file_out, zero);
 		}
 		strcat(file_out, f_char);
@@ -1551,7 +1603,7 @@ ReadBMP(const char *filename)
   // Open file
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
-    fprintf(stderr, "Unable to open image file: %s", filename);
+    fprintf(stderr, "Unable to open image file: %s \n", filename);
     return 0;
   }
 

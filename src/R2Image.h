@@ -45,9 +45,9 @@ class R2Image {
  public:
   // Constructors/destructor
   R2Image(void);
-  R2Image(const char *filename);
+  R2Image(const char* filename);
   R2Image(int width, int height);
-  R2Image(int width, int height, const R2Pixel *pixels);
+  R2Image(int width, int height, const R2Pixel* pixels);
   R2Image(const R2Image& image);
   ~R2Image(void);
 
@@ -58,10 +58,10 @@ class R2Image {
 
   // Pixel access/update
   R2Pixel& Pixel(int x, int y);
-  R2Pixel *Pixels(void);
-  R2Pixel *Pixels(int row);
-  R2Pixel *operator[](int row);
-  const R2Pixel *operator[](int row) const;
+  R2Pixel* Pixels(void);
+  R2Pixel* Pixels(int row);
+  R2Pixel* operator[](int row);
+  const R2Pixel* operator[](int row) const;
   void SetPixel(int x, int y,  const R2Pixel& pixel);
 
   // Image processing
@@ -79,33 +79,33 @@ class R2Image {
   void SobelY();
   void LoG();
   void Blur(double sigma);
-  std::vector<HarrisPixel> Harris(double sigma);
+  std::vector<HarrisPixel> Harris(double sigma, int num_top_features);
+  void MarkHarrisFeatures(double sigma, int num_top_features);
   void Sharpen(void);
 
   // further operations
-  void blendOtherImageTranslated(R2Image * otherImage);
-  void blendOtherImageHomography(R2Image * otherImage);
-  void videoStabilization(int frame_num);
+  void blendOtherImageTranslated(R2Image* otherImage);
+  void blendOtherImageHomography(R2Image* otherImage);
+  void videoStabilization(int frame_num, char* input_folder);
 
   // File reading/writing
-  int Read(const char *filename);
-  int ReadBMP(const char *filename);
-  int ReadPPM(const char *filename);
-  int ReadJPEG(const char *filename);
-  int Write(const char *filename) const;
-  int WriteBMP(const char *filename) const;
-  int WritePPM(const char *filename, int ascii = 0) const;
-  int WriteJPEG(const char *filename) const;
+  int Read(const char* filename);
+  int ReadBMP(const char* filename);
+  int ReadPPM(const char* filename);
+  int ReadJPEG(const char* filename);
+  int Write(const char* filename) const;
+  int WriteBMP(const char* filename) const;
+  int WritePPM(const char* filename, int ascii = 0) const;
+  int WriteJPEG(const char* filename) const;
 
  private:
   // Utility functions
   void Resize(int width, int height);
   R2Pixel Sample(double u, double v,  int sampling_method);
   HarrisPixel Search(R2Image originalImage, R2Image otherImage, HarrisPixel featurePixel);
-  void R2Image::line(int x0, int x1, int y0, int y1, float r, float g, float b);
+  void line(int x0, int x1, int y0, int y1, float r, float g, float b);
 
- private:
-  R2Pixel *pixels;
+  R2Pixel* pixels;
   int npixels;
   int width;
   int height;
@@ -152,7 +152,7 @@ Pixel(int x, int y)
 
 
 
-inline R2Pixel *R2Image::
+inline R2Pixel* R2Image::
 Pixels(void)
 {
   // Return pointer to pixels for whole image 
@@ -162,7 +162,7 @@ Pixels(void)
 
 
 
-inline R2Pixel *R2Image::
+inline R2Pixel* R2Image::
 Pixels(int x)
 {
   // Return pixels pointer for row at x
@@ -172,7 +172,7 @@ Pixels(int x)
 
 
 
-inline R2Pixel *R2Image::
+inline R2Pixel* R2Image::
 operator[](int x) 
 {
   // Return pixels pointer for row at x
@@ -181,12 +181,12 @@ operator[](int x)
 
 
 
-inline const R2Pixel *R2Image::
+inline const R2Pixel* R2Image::
 operator[](int x) const
 {
   // Return pixels pointer for row at x
   // (pixels start at lower-left and go in row-major order)
-  return &pixels[x*height];
+  return &pixels[x * height];
 }
 
 
@@ -195,7 +195,7 @@ inline void R2Image::
 SetPixel(int x, int y, const R2Pixel& pixel)
 {
   // Set pixel
-  pixels[x*height + y] = pixel;
+  pixels[x * height + y] = pixel;
 }
 
 

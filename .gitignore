@@ -240,3 +240,19 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+
+# Make Result
+*/*.a
+*/*/*.a 
+*.o 
+*/*.o 
+*/*/*.o 
+imgpro 
+imgpro.exe 
+R2/libR2.a 
+jpeg/libjpeg.a
+
+# Mac specifics
+.DS_Store
+*/.DS_Store
+
