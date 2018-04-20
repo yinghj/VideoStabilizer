@@ -438,6 +438,13 @@ line(int x0, int x1, int y0, int y1, float r, float g, float b) {
 			}
 		}
 	}
+	if (x1 > 3 && x1 < width - 3 && y1 > 3 && y1 < height - 3) {
+		for(int x = x1-3; x <= x1+3; x++) {
+			for(int y = y1-3; y<=y1+3; y++) {
+				Pixel(x,y).Reset(r,b,g,1.0);
+			}
+		}
+	}
 }
 
 // Bound normalizes the edges of a filtered image that cannot be filtered by
@@ -734,6 +741,14 @@ matchOtherImageTranslated(R2Image* otherImage, float harris_sigma, int num_featu
 			max_inliner = num_inliner;
 			track_vector_x = u1;
 			track_vector_y = u2;
+		}
+	}
+
+	for (int i = 0; i < width; i++)
+	{
+		for (int j = 0; j < height; j++)
+		{
+			markedImage.Pixel(i, j) = markedImage.Pixel(i, j) * 0.6 + Pixel(i, j) * 0.4;
 		}
 	}
 
@@ -1256,108 +1271,7 @@ videoStabilization(int frame_num, char* input_folder)
 				}
 			}
 		}
-/*
-		// The number of RANSAC loops
-		const int N = 50;
 
-		// Difference threshold for inliners (using sqr of length)
-		const float THRESHOLD = 16;
-
-		int max_inliner = 0;
-
-		// Initialize the vector to store the best H 
-		// transformation matrix between two consecutive frames.
-		std::vector<double> homography_matrix;
-		homography_matrix.reserve(9);
-		for (int rsc_loop = 0; rsc_loop < N; rsc_loop++) {
-			int num_inliner = 0;
-
-			// Randomly pick 4 different points.
-			int rand_index_1 = rand() % 150;
-			int rand_index_2 = rand() % 150;
-			while (rand_index_2 == rand_index_1) {
-				rand_index_2 = rand() % 150;
-			}
-			int rand_index_3 = rand() % 150;
-			while (rand_index_3 == rand_index_1 || rand_index_3 == rand_index_2) {
-				rand_index_3 = rand() % 150;
-			}
-			int rand_index_4 = rand() % 150;
-			while (rand_index_4 == rand_index_1 || rand_index_4 == rand_index_2 || rand_index_4 == rand_index_3) {
-				rand_index_4 = rand() % 150;
-			}
-
-			// Initialize 4-correspondence vectors.
-			std::vector<int> inputX;
-			std::vector<int> inputY;
-			std::vector<int> outputX;
-			std::vector<int> outputY;
-
-			inputX.push_back(feats[rand_index_1].posx);
-			inputX.push_back(feats[rand_index_2].posx);
-			inputX.push_back(feats[rand_index_3].posx);
-			inputX.push_back(feats[rand_index_4].posx);
-
-			outputX.push_back(next_feats[rand_index_1].posx);
-			outputX.push_back(next_feats[rand_index_2].posx);
-			outputX.push_back(next_feats[rand_index_3].posx);
-			outputX.push_back(next_feats[rand_index_4].posx);
-
-			inputY.push_back(feats[rand_index_1].posy);
-			inputY.push_back(feats[rand_index_2].posy);
-			inputY.push_back(feats[rand_index_3].posy);
-			inputY.push_back(feats[rand_index_4].posy);
-
-			outputY.push_back(next_feats[rand_index_1].posy);
-			outputY.push_back(next_feats[rand_index_2].posy);
-			outputY.push_back(next_feats[rand_index_3].posy);
-			outputY.push_back(next_feats[rand_index_4].posy);
-
-			// Compute Homography Estimation Matrix.
-			std::vector<double> vector_h = findHomographyMatrix(inputX, inputY, outputX, outputY);
-
-			std::vector<int> temp_accept;
-
-			// Count the number of inliners for the current H matirx.
-			for (int x = 0; x < feats.size(); x++) {
-				int m = next_feats[x].posx;
-				int n = next_feats[x].posy;
-				int p = feats[x].posx;
-				int q = feats[x].posy;
-
-				int v1 = m - p;
-				int v2 = n - q;
-
-				int u1 = ((vector_h[0] * p + vector_h[1] * q + vector_h[2] * 1) / (vector_h[6] * p + vector_h[7] * q + vector_h[8] * 1)) - p;
-				int u2 = ((vector_h[3] * p + vector_h[4] * q + vector_h[6] * 1) / (vector_h[6] * p + vector_h[7] * q + vector_h[8] * 1)) - q;
-
-				if (((u1 - v1) * (u1 - v1) + (u2 - v2) * (u2 - v2)) <= THRESHOLD) {
-					num_inliner++;
-					temp_accept.push_back(x);
-				}
-			}
-
-			// Store the inliner features for the best H matrix.
-			if (num_inliner > max_inliner) {
-				max_inliner = num_inliner;
-				homography_matrix = vector_h;
-				feats_accepted.clear();
-				next_accepted.clear();
-				for (int temp_ind = 0; temp_ind < temp_accept.size(); temp_ind++) {
-					feats_accepted.push_back(feats[temp_accept[temp_ind]]);
-					next_accepted.push_back(next_feats[temp_accept[temp_ind]]);
-				}
-			}		
-		}
-
-		for (int acc_ind = 0; acc_ind < feats_accepted.size(); acc_ind++) {
-			frames[f]->line(feats_accepted[acc_ind].posx, next_accepted[acc_ind].posx,
-			feats_accepted[acc_ind].posy, next_accepted[acc_ind].posy, 0, 255, 0);
-		}
-
-		//printf("Trackable features remaining: %d\n", next_accepted.size());
-*/
-		
 		feats = next_accepted;
 		printf("%lu features accepted. \n", feats.size());
 

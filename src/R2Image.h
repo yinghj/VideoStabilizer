@@ -102,7 +102,7 @@ class R2Image {
   // Utility functions
   void Resize(int width, int height);
   R2Pixel Sample(double u, double v,  int sampling_method);
-  HarrisPixel Search(R2Image originalImage, R2Image otherImage, HarrisPixel featurePixel);
+  HarrisPixel Search(R2Image originalImage, R2Image otherImage, HarrisPixel featurePixel, float search_win_perc);
   void line(int x0, int x1, int y0, int y1, float r, float g, float b);
 
   R2Pixel* pixels;

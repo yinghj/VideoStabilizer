@@ -36,6 +36,6 @@ popd
 #     2.0 100    
 
 src/imgpro input/test_D_face01.jpg output/test_D_trans.jpg -matchTranslation \
-    input/test_D_face02.jpg   
+    input/test_D_face02.jpg 50 0.1
 
 # src/imgpro -videoStabilization 222 testSequence/

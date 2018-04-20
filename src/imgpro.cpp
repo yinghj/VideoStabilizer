@@ -38,12 +38,12 @@ static char options[] =
 "  -sobelX\n"
 "  -sobelY\n"
 "  -log\n"
-"  -harris <real:sigma>\n"
+"  -harris <real:sigma> <int:num_top_features>\n"
 "  -saturation <real:factor>\n"
 "  -brightness <real:factor>\n"
 "  -blur <real:sigma>\n"
 "  -sharpen \n"
-"  -matchTranslation <file:other_image>\n"
+"  -matchTranslation <file:other_image> <int:num_features_to_match> <real:search_win_perc>\n"
 "  -matchHomography <file:other_image>\n";
 
 
