@@ -1165,11 +1165,11 @@ std::vector<double> gaussianSmooth(std::vector<int> vector, int sigma) {
 }
 
 void R2Image::
-videoStabilization(int frame_num, char* input_folder)
+videoStabilization(int frame_num, char* input_folder, char* output_folder)
 {	
 	const char* jpg = ".jpg";
 	const char* zero = "0";
-	const int NUM_FEATURES_TRACKED = 150;
+	const int NUM_FEATURES_TRACKED = 100;
 	const float HARRIS_SIGMA = 2.0;
 	const int FILENAME_LENGTH = 5;
 
@@ -1193,102 +1193,159 @@ videoStabilization(int frame_num, char* input_folder)
 
 	// Video stabilization
 
-	// Harris on the first frame
 	R2Image harrisImage(*frames[0]);
-	printf("Finding %d features on the first frame...\r", NUM_FEATURES_TRACKED);
-	std::vector<HarrisPixel> feats = harrisImage.Harris(HARRIS_SIGMA, NUM_FEATURES_TRACKED);
-	printf("%d features found                        \n\n", NUM_FEATURES_TRACKED);
-	std::vector<int> x_trans_seq;
-	std::vector<int> y_trans_seq;
-	x_trans_seq.push_back(0);
-	y_trans_seq.push_back(0);
+
+	std::vector<HarrisPixel> feats;
+	
+	std::vector<int> x_trans_seq_total;
+	std::vector<int> y_trans_seq_total;
+
+	// Store each continuous feature tracking sequence to further smoothing.
+	// Reset when a new set of Harris features are found. 
+	// std::vector<int> x_trans_seq_tmp;
+	// std::vector<int> y_trans_seq_tmp;
+
+	// std::vector<int> smoothX_total;
+	// std::vector<int> smoothY_total;
+
+	// // Store each continuous smoothing subsequence.
+	// // Reset when a new set of Harris features are found. 
+	// std::vector<int> smoothX_tmp;
+	// std::vector<int> smoothY_tmp;
 
 	// Track feats onto consecutive frames
 	for (int f = 0; f < frames.size()-1; f++) {
 		if (feats.size() < 10) {
+			// Restart a tracking sequence if there exist too few features in the current frame to track.
+
+			// Record previous sub tracking sequence.
+
+			// // Smooth the previous tracking sequence.
+			// printf("Smoothing motion sequence...\n");				
+			// std::vector<double> smoothX_tmp = gaussianSmooth(x_trans_seq_tmp, 10);
+			// std::vector<double> smoothY_tmp = gaussianSmooth(y_trans_seq_tmp, 10);
+			// Record the subsequence.
+			// smoothX_total.reserve(smoothX_total.size() + smoothX_tmp.size());
+			// smoothX_total.insert(smoothX_total.end(), smoothX_tmp.begin(), smoothX_tmp.end());
+
+			// smoothY_total.reserve(smoothY_total.size() + smoothY_tmp.size());
+			// smoothY_total.insert(smoothY_total.end(), smoothY_tmp.begin(), smoothY_tmp.end());
+
+			// x_trans_seq_total.reserve(x_trans_seq_total.size() + x_trans_seq_tmp.size());
+			// x_trans_seq_total.insert(x_trans_seq_total.end(), x_trans_seq_tmp.begin(), x_trans_seq_tmp.end());
+
+			// y_trans_seq_total.reserve(y_trans_seq_total.size() + y_trans_seq_tmp.size());
+			// y_trans_seq_total.insert(y_trans_seq_total.end(), y_trans_seq_tmp.begin(), y_trans_seq_tmp.end());
+			// // Reset tmp sequence.
+			// // smoothX_tmp.clear();
+			// // smoothY_tmp.clear();
+			// x_trans_seq_tmp.clear();
+			// y_trans_seq_tmp.clear();
+
+			//double x_avg = averageSmooth(x_trans_seq_tmp);
+			//double y_avg = averageSmooth(y_trans_seq_tmp);
+
+			// Start a new tracking sequence
+
+			// Initialize the start of each continuous tracking sequence at the end of previous sequence
+			// (or <0,0> if the first frame).
+			if (x_trans_seq_total.size() == 0) {
+				// x_trans_seq_tmp.push_back(0);
+				// y_trans_seq_tmp.push_back(0);
+				x_trans_seq_total.push_back(0);
+				y_trans_seq_total.push_back(0);
+			} else {
+				// x_trans_seq_tmp.push_back(x_trans_seq_total.back());
+				// y_trans_seq_tmp.push_back(y_trans_seq_total.back());
+				x_trans_seq_total.push_back(x_trans_seq_total.back());
+				y_trans_seq_total.push_back(y_trans_seq_total.back());
+			}
+			
 			R2Image new_harrisImage(*frames[f]);
 			printf("Finding %d features on the %dth frame...\r",NUM_FEATURES_TRACKED, f+1);
 			feats = new_harrisImage.Harris(HARRIS_SIGMA, NUM_FEATURES_TRACKED);
 			printf("%d features found                        \n\n", NUM_FEATURES_TRACKED);
-		}
-		std::vector<HarrisPixel> feats_accepted;
-		feats_accepted.reserve(feats.size());
-		std::vector<HarrisPixel> next_accepted;
-		next_accepted.reserve(feats.size());
+		
+		} else {
+			// Else track features from the previous frame on current frame.
 
-		// Feature tracking on the next frame.
-		std::vector<HarrisPixel> next_feats;
-		next_feats.reserve(feats.size());
-		printf("Tracking %lu features...\r", feats.size());
-		for (int feat_index = 0; feat_index < feats.size(); feat_index++) {
-			HarrisPixel matchPix = frames[f]->Search(*frames[f], *frames[f + 1], feats[feat_index], 0.1 /** search_win_perc **/);
-			next_feats.push_back(matchPix);
-		}
-		printf("%lu features matched.			\r", next_feats.size());
+			// Feature tracking on the current frame.
+			std::vector<HarrisPixel> current_feats;
+			current_feats.reserve(feats.size());
 
-		//RANSAC elimination (eliminate in both frames)
+			printf("Tracking %lu features...\r", feats.size());
+			for (int feat_index = 0; feat_index < feats.size(); feat_index++) {
+				HarrisPixel matchPix = frames[f]->Search(*frames[f], *frames[f + 1], feats[feat_index], 0.1 /** search_win_perc **/);
+				current_feats.push_back(matchPix);
+			}
+			printf("%lu features matched.			\r", current_feats.size());
 
-		const int N = 50;
-		// using sqr of length
-		const float THRESHOLD = 9;
-		int max_inliner = 0;
-		int track_vector_x = 0;
-		int track_vector_y = 0;
+			//RANSAC elimination
+			std::vector<HarrisPixel> feats_accepted;
+			feats_accepted.reserve(current_feats.size());
 
-		for (int n = 0; n < N; n++) {
-			int num_inliner = 0;
-			int rand_index = rand() % next_feats.size();
+			// Try N random vectors as reference.
+			const int N = 50;
+			// using sqr of length
+			const float THRESHOLD = 9;
+			int max_inliner = 0;
+			int track_vector_x = 0;
+			int track_vector_y = 0;
 
-			std::vector<int> temp_accept;
+			for (int n = 0; n < N; n++) {
+				int num_inliner = 0;
+				int rand_index = rand() % current_feats.size();
 
-			int u1 = next_feats[rand_index].posx - feats[rand_index].posx;
-			int u2 = next_feats[rand_index].posy - feats[rand_index].posy;
+				std::vector<int> temp_accept;
+				temp_accept.reserve(current_feats.size());
 
-			for (int x = 0; x < feats.size(); x++) {
-				int m = next_feats[x].posx;
-				int n = next_feats[x].posy;
-				int p = feats[x].posx;
-				int q = feats[x].posy;
+				int u1 = current_feats[rand_index].posx - feats[rand_index].posx;
+				int u2 = current_feats[rand_index].posy - feats[rand_index].posy;
 
-				int v1 = m - p;
-				int v2 = n - q;
+				for (int x = 0; x < feats.size(); x++) {
+					int m = current_feats[x].posx;
+					int n = current_feats[x].posy;
+					int p = feats[x].posx;
+					int q = feats[x].posy;
 
-				if (((u1 - v1) * (u1 - v1) + (u2 - v2) * (u2 - v2)) <= THRESHOLD) {
-					num_inliner++;
-					temp_accept.push_back(x);
+					int v1 = m - p;
+					int v2 = n - q;
+
+					if (((u1 - v1) * (u1 - v1) + (u2 - v2) * (u2 - v2)) <= THRESHOLD) {
+						num_inliner++;
+						temp_accept.push_back(x);
+					}
+				}
+
+				if (num_inliner > max_inliner) {
+					max_inliner = num_inliner;
+					track_vector_x = u1;
+					track_vector_y = u2;
+					feats_accepted.clear();
+					for (int tmp_ind= 0; tmp_ind < temp_accept.size(); tmp_ind++) {
+  						feats_accepted.push_back(current_feats[temp_accept[tmp_ind]]);
+					}
 				}
 			}
 
-			if (num_inliner > max_inliner) {
-				max_inliner = num_inliner;
-				track_vector_x = u1;
-				track_vector_y = u2;
-				feats_accepted.clear();
-				next_accepted.clear();
-				for (int temp_ind = 0; temp_ind < temp_accept.size(); temp_ind++) {
-					feats_accepted.push_back(feats[temp_accept[temp_ind]]);
-					next_accepted.push_back(next_feats[temp_accept[temp_ind]]);
-				}
-			}
+			feats = feats_accepted;
+			printf("%lu features accepted. \n", feats.size());
+
+			// Get translation vector
+			printf("Calculating %d translation vector: ", f+1);
+			printf("%d, ", track_vector_x);
+			printf("%d\n\n", track_vector_y);
+			// x_trans_seq_tmp.push_back(track_vector_x + x_trans_seq_tmp[x_trans_seq_tmp.size() - 1]);
+			// y_trans_seq_tmp.push_back(track_vector_y + y_trans_seq_tmp[y_trans_seq_tmp.size() - 1]);
+			x_trans_seq_total.push_back(track_vector_x + x_trans_seq_total.back());
+			y_trans_seq_total.push_back(track_vector_y + y_trans_seq_total.back());
 		}
-
-		feats = next_accepted;
-		printf("%lu features accepted. \n", feats.size());
-
-		// Get translation vector
-		printf("Calculating %d translation vector: ", f+1);
-		printf("%d, ", track_vector_x);
-		printf("%d\n\n", track_vector_y);
-		x_trans_seq.push_back(track_vector_x + x_trans_seq[x_trans_seq.size() - 1]);
-		y_trans_seq.push_back(track_vector_y + y_trans_seq[y_trans_seq.size() - 1]);
 	}
 
-	printf("Smoothing motion sequence...\n");
-	std::vector<double> smoothX = gaussianSmooth(x_trans_seq, 6);
-	std::vector<double> smoothY = gaussianSmooth(y_trans_seq, 6);
-	//double x_avg = averageSmooth(x_trans_seq);
-	//double y_avg = averageSmooth(y_trans_seq);
 
+	printf("Smoothing motion sequence...\n");				
+	std::vector<double> smoothX_total = gaussianSmooth(x_trans_seq_total, 10);
+	std::vector<double> smoothY_total = gaussianSmooth(y_trans_seq_total, 10);
 
 	for (int f_ind = 0; f_ind < frames.size(); f_ind++) {
 		if (f_ind % 50 == 0) {
@@ -1296,8 +1353,8 @@ videoStabilization(int frame_num, char* input_folder)
 		}
 		R2Image stabilized_frame(frames[f_ind]->width, frames[f_ind]->height);
 
-		double x_stab = x_trans_seq[f_ind] - smoothX[f_ind];
-		double y_stab = y_trans_seq[f_ind] - smoothY[f_ind];
+		double x_stab = x_trans_seq_total[f_ind] - smoothX_total[f_ind];
+		double y_stab = y_trans_seq_total[f_ind] - smoothY_total[f_ind];
 
 		// Apply the homography matrix to every pixel in each frame.
 		for (int x = 0; x < frames[f_ind]->width; x++) {
@@ -1320,9 +1377,8 @@ videoStabilization(int frame_num, char* input_folder)
 		}
 		char f_char[100];
 		snprintf(f_char, 100, "%d", f_ind + 1);
-		char folder_out[] = "out/";
 		char file_out[100];
-		strcpy(file_out, folder_out);
+		strcpy(file_out, output_folder);
 		for (int j = 0; j < FILENAME_LENGTH - strlen(f_char); j++) {
 			strcat(file_out, zero);
 		}

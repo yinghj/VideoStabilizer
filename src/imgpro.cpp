@@ -44,7 +44,8 @@ static char options[] =
 "  -blur <real:sigma>\n"
 "  -sharpen \n"
 "  -matchTranslation <file:other_image> <int:num_features_to_match> <real:search_win_perc>\n"
-"  -matchHomography <file:other_image>\n";
+"  -matchHomography <file:other_image>\n"
+"  -videoStabilization <int:frame_num> <file:input_folder> <file:output_folder>\n";
 
 
 static void 
@@ -223,11 +224,12 @@ main(int argc, char **argv)
       delete other_image;
     }
   	else if (!strcmp(*argv, "-videoStabilization")) {
-  		CheckOption(*argv, argc, 3);
+  		CheckOption(*argv, argc, 4);
   		int frame_num = atoi(argv[1]);
       char* input_folder = argv[2];
-  		argv += 3, argc -= 3;
-  		image->videoStabilization(frame_num, input_folder);
+      char* output_folder = argv[3];
+  		argv += 4, argc -= 4;
+  		image->videoStabilization(frame_num, input_folder, output_folder);
   	}
     else {
       // Unrecognized program argument
